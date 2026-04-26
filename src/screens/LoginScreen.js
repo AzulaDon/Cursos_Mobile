@@ -41,7 +41,7 @@ export default function LoginScreen({ navigation }) {
       >
         <View style={styles.logo}>
           <Text style={styles.logoIcon}>🎓</Text>
-          <Text style={styles.logoText}>CursosApp</Text>
+          <Text style={styles.logoText}>Cursos Ometepec</Text>
           <Text style={styles.logoSub}>Aprende a tu ritmo</Text>
         </View>
 

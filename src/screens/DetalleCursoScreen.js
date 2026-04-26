@@ -11,6 +11,7 @@ import VideoItem from '../components/VideoItem';
 import LoadingScreen from '../components/LoadingScreen';
 import { Colors } from '../utils/colors';
 import { formatDuracion } from '../utils/format';
+import { useAuth } from '../context/AuthContext';
 
 export default function DetalleCursoScreen({ route, navigation }) {
   const { cursoId, inscripcionId: inscripcionIdParam } = route.params;
@@ -20,6 +21,7 @@ export default function DetalleCursoScreen({ route, navigation }) {
   const [progresos, setProgresos] = useState([]); // List<ProgresoDTO>
   const [loading, setLoading] = useState(true);
   const [inscribiendose, setInscribiendose] = useState(false);
+  const { user } = useAuth();
 
   const cargar = async () => {
     try {
@@ -226,7 +228,7 @@ export default function DetalleCursoScreen({ route, navigation }) {
             onPress={() =>
               navigation.navigate('Certificado', {
                 cursoTitulo: curso.titulo,
-                usuario: inscripcion.usuarioNombre || 'Usuario'
+                usuario: user?.nombre || 'Usuario'
               })
             }
           >

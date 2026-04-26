@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, TouchableOpacity,
   Alert, Dimensions
 } from 'react-native';
-import { VideoView, useVideoPlayer } from 'expo-video'; // 🔥 NUEVO
+import * as Linking from 'expo-linking'; // 🔥 abrir YouTube
 import { guardarProgreso } from '../api/cursosApi';
 import { Colors } from '../utils/colors';
 import { formatDuracion } from '../utils/format';
@@ -19,10 +19,7 @@ export default function ReproductorVideoScreen({ route, navigation }) {
 
   const segundoActualRef = useRef(progresoInicial?.ultimoSegundo || 0);
 
-  // 🔥 NUEVO PLAYER
-  const player = useVideoPlayer(video.urlStream);
-
-  // 🔥 Guardar progreso (igual que antes)
+  // 🔥 Guardar progreso (simulado)
   const guardar = async (segundo, force = false) => {
     if (!inscripcionId || guardando) return;
     if (!force && Math.abs(segundo - segundoActualRef.current) < 10) return;
@@ -32,7 +29,7 @@ export default function ReproductorVideoScreen({ route, navigation }) {
 
     try {
       const res = await guardarProgreso(inscripcionId, video.id, segundo);
-      if (res.visto && !marcadoVisto) {
+      if (res?.visto && !marcadoVisto) {
         setMarcadoVisto(true);
       }
     } catch (e) {
@@ -42,25 +39,17 @@ export default function ReproductorVideoScreen({ route, navigation }) {
     }
   };
 
-  // 🔥 NUEVA FORMA DE OBTENER PROGRESO
+  // 🔥 Simulación de progreso cada 5s
   useEffect(() => {
     const interval = setInterval(() => {
-      if (!player) return;
-
-      const segundo = Math.floor(player.currentTime || 0);
-      guardar(segundo);
-
-      // marcar visto automático
-      if (player.duration && player.currentTime >= player.duration - 1 && !marcadoVisto) {
-        guardar(video.duracionSeg || 9999, true);
-      }
-
+      const nuevoSegundo = segundoActualRef.current + 5;
+      guardar(nuevoSegundo);
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [player, marcadoVisto]);
+  }, []);
 
-  // guardar al salir
+  // Guardar al salir
   useEffect(() => {
     return () => {
       if (inscripcionId && segundoActualRef.current > 0) {
@@ -75,29 +64,35 @@ export default function ReproductorVideoScreen({ route, navigation }) {
     Alert.alert('✅ Completado', 'Video marcado como visto');
   };
 
+  const abrirVideo = async () => {
+    if (!video?.urlStream) {
+      Alert.alert('Error', 'No hay video disponible');
+      return;
+    }
+
+    const supported = await Linking.canOpenURL(video.urlStream);
+    if (supported) {
+      await Linking.openURL(video.urlStream);
+    } else {
+      Alert.alert('Error', 'No se puede abrir el video');
+    }
+  };
+
   return (
     <View style={styles.container}>
       
-      {/* 🔥 REPRODUCTOR */}
+      {/* 🎬 PLAYER SIMULADO */}
       <View style={styles.playerContainer}>
-        {video.urlStream ? (
-          <VideoView
-            player={player}
-            style={styles.video}
-            allowsFullscreen
-            allowsPictureInPicture
-          />
-        ) : (
-          <View style={styles.noVideo}>
-            <Text style={styles.noVideoText}>❌ Video no disponible</Text>
-          </View>
-        )}
+        <TouchableOpacity style={styles.fakePlayer} onPress={abrirVideo}>
+          <Text style={styles.playIcon}>▶</Text>
+          <Text style={styles.playText}>Abrir video en YouTube</Text>
+        </TouchableOpacity>
       </View>
 
       {/* INFO */}
       <View style={styles.info}>
         <View style={styles.orderRow}>
-          <Text style={styles.orden}>Video {video.ordenSecuencia}</Text>
+          <Text style={styles.orden}>Video {video?.ordenSecuencia}</Text>
 
           {marcadoVisto && (
             <View style={styles.vistoBadge}>
@@ -108,9 +103,9 @@ export default function ReproductorVideoScreen({ route, navigation }) {
           {guardando && <Text style={styles.guardandoText}>Guardando...</Text>}
         </View>
 
-        <Text style={styles.titulo}>{video.titulo}</Text>
+        <Text style={styles.titulo}>{video?.titulo}</Text>
         <Text style={styles.duracion}>
-          ⏱ Duración: {formatDuracion(video.duracionSeg)}
+          ⏱ Duración: {formatDuracion(video?.duracionSeg)}
         </Text>
 
         {!marcadoVisto && (
@@ -138,7 +133,7 @@ export default function ReproductorVideoScreen({ route, navigation }) {
   );
 }
 
-// 🔥 MISMO DISEÑO (NO TOCADO)
+// 🎨 ESTILOS (respetados)
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
 
@@ -148,16 +143,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
   },
 
-  video: { flex: 1 },
-
-  noVideo: {
+  fakePlayer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#000',
   },
 
-  noVideoText: { color: Colors.textMuted, fontSize: 14 },
+  playIcon: {
+    fontSize: 50,
+    color: '#fff',
+    marginBottom: 10,
+  },
+
+  playText: {
+    color: '#fff',
+    fontSize: 16,
+  },
 
   info: { flex: 1, padding: 20 },
 
